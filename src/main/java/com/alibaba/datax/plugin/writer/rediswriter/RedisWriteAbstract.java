@@ -114,6 +114,7 @@ public abstract class RedisWriteAbstract {
      * 关闭资源
      */
     public void close() {
+        RedisWriterHelper.syscData(pipelined);
         RedisWriterHelper.close(redisClient);
     }
 }

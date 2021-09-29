@@ -1,5 +1,6 @@
 package com.alibaba.datax.plugin.writer.rediswriter;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.datax.common.exception.CommonErrorCode;
 import com.alibaba.datax.common.exception.DataXException;
 import com.alibaba.datax.common.util.Configuration;
@@ -7,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.*;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,6 +23,8 @@ public class RedisWriterHelper {
         String mode = originalConfig.getNecessaryValue(Key.REDISMODE, CommonErrorCode.CONFIG_ERROR);
         String addr = originalConfig.getNecessaryValue(Key.ADDRESS, CommonErrorCode.CONFIG_ERROR);
         String auth = originalConfig.getString(Key.AUTH);
+        int db = originalConfig.getInt(Key.DB,0);
+        Boolean ssl = originalConfig.getBool(Key.SSL,false);
 
         if(Constant.CLUSTER.equalsIgnoreCase(mode)){
             JedisCluster jedisCluster = getJedisCluster(addr, auth);
@@ -33,7 +37,7 @@ public class RedisWriterHelper {
             }
 
         }else if(Constant.STANDALONE.equalsIgnoreCase(mode)){
-            Jedis jedis = getJedis(addr, auth);
+            Jedis jedis = getJedis(addr, auth, db, ssl);
             jedis.set("testConnet","test");
             jedis.expire("testConnet",1);
             jedis.close();
@@ -48,14 +52,21 @@ public class RedisWriterHelper {
      * 获取Jedis
      * @param addr 地址，ip:port
      * @param auth 密码
+     * @param db
+     * @param ssl
      * @return Jedis
      */
-    public static Jedis getJedis(String addr, String auth) {
+    public static Jedis getJedis(String addr, String auth,int db,Boolean ssl) {
         String[] split = addr.split(":");
-        Jedis jedis = new Jedis(split[0], Integer.parseInt(split[1]));
+        String scheme = "http";
+        if (ssl) scheme = "rediss";
+        final URI uri = URI.create(StrUtil.format("{0}://{1}:{2}/{3}",scheme,split[0],Integer.parseInt(split[1]),db));
+        JedisShardInfo jedisShardInfo = new JedisShardInfo(uri);
         if(StringUtils.isNoneBlank(auth)){
-            jedis.auth(auth);
+            jedisShardInfo.setPassword(auth);
+            jedisShardInfo.setSoTimeout(10000);
         }
+        Jedis jedis = new Jedis(jedisShardInfo);
         return jedis;
     }
 

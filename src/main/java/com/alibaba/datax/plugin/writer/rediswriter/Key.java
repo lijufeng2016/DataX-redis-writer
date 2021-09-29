@@ -4,6 +4,8 @@ public class Key {
     public final static String REDISMODE = "redisMode";
     public final static String ADDRESS = "address";
     public final static String AUTH = "auth";
+    public final static String DB = "db";
+    public final static String SSL = "ssl";
 
     public final static String BATCH_SIZE = "batchSize";
 

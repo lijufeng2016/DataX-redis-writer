@@ -1,4 +1,4 @@
-# DataX-redis-writer
+# DataX RedisWriter 说明
 
 ------------
 
